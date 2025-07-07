@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="UTF-8">
+<head>
+  <meta charset="UTF-8">
+  <title>HouseKeeper</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    body { font-family: 'Segoe UI', Arial, sans-serif; background: #f7f9fa; margin: 0; }
+    .container { display: flex; }
+    .side-menu {
+      width: 220px; background: #2b3a55; color: #fff; min-height: 100vh; padding: 2rem 1rem 1rem 1rem;
+      box-sizing: border-box; position: fixed; left: 0; top: 0; bottom: 0;
+      display: flex; flex-direction: column; gap: 1.2rem; z-index: 10;
+    }
+    .side-menu h2 { font-size: 1.1rem; margin: 0 0 1rem 0; }
+    .side-menu button {
+      background: #41506b; color: #fff; border: none; border-radius: 7px;
+      padding: 0.7rem 0.8rem; font-size: 1rem; cursor: pointer; margin-bottom: 0.7rem;
+      transition: background 0.2s; width: 100%; text-align: left;
+    }
+    .side-menu button:hover { background: #1bb76e; }
+    .main-content { margin-left: 240px; width: calc(100vw - 240px); }
+    header {
+      background: #fff; color: #2b3a55; padding: 1.5rem 1rem 1rem 1rem; position: relative;
+      box-shadow: 0 2px 8px rgba(44,62,80,0.06);
+    }
+    .header-right {
+      position: absolute; top: 1.5rem; right: 2rem; display: flex; gap: 0.5rem;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1.3rem;
+      margin: 2rem 1rem 1rem 1rem;
+    }
+    .card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      padding: 1.2rem 1rem 1.5rem 1rem;
+      box-sizing: border-box;
+      min-height: 370px;
+      display: flex; flex-direction: column; position: relative;
+      align-items: center;
+      transition: box-shadow 0.2s;
+    }
+    .card:hover { box-shadow: 0 4px 20px rgba(44,62,80,0.13);}
+    .card h2 { margin-top: 0; font-size: 1.2rem; color: #2b3a55; }
+    .status { margin: 1rem 0; font-size: 1.1rem; }
+    button, input[type="button"] {
+      background: #2b3a55; color: #fff; border: none; border-radius: 7px;
+      padding: 0.5rem 1.2rem; font-size: 1rem; cursor: pointer; margin: 0.2rem;
+      transition: background 0.2s;
+    }
+    button:hover, input[type="button"]:hover { background: #41506b; }
+    select, input[type="number"], input[type="text"], input[type="date"], input[type="email"], input[type="password"] {
+      padding: 0.4rem 0.7rem; font-size: 1rem; border-radius: 5px; border: 1px solid #bbb;
+    }
+    ul { list-style: none; padding: 0; margin: 0.5rem 0 0 0; }
+    li { margin-bottom: 0.3rem; }
+    .danger { color: #d7263d; font-weight: bold; }
+    .success { color: #1bb76e; font-weight: bold; }
+    .edit-btn { background: #a7b6d2; color: #fff; border: none; border-radius: 7px; padding: 0.3rem 0.7rem; font-size: 0.95rem; margin-left: 0.5rem;}
+    .edit-btn:hover { background: #41506b; }
+    .gauge-bar { width: 100%; background: #f2f4f8; border-radius: 7px; height: 18px; margin: 0.5rem 0; position: relative; overflow: hidden; }
+    .gauge-fill { background: #1bb76e; height: 100%; transition: width 0.3s; border-radius: 7px; position: absolute; left: 0; top: 0; }
+    .recent-dropdown { margin-bottom: 0.5rem; }
+    .recent-dropdown select { width: 100%; }
+    .modal-bg {
+      display: none; position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(44,62,80,0.25); z-index: 1000; justify-content: center; align-items: center;
+    }
+    .modal-bg.active { display: flex; }
+    .modal {
+      background: #fff; border-radius: 12px; box-shadow: 0 4px 24px rgba(44,62,80,0.19);
+      padding: 2rem 2.5rem; min-width: 340px; max-width: 95vw;
+      display: flex; flex-direction: column; gap: 1rem; position: relative;
+    }
+    .modal h3 { margin: 0 0 1rem 0; color: #2b3a55; }
+    .modal label { display: block; margin-bottom: 0.3rem; }
+    .modal input[type="text"], .modal input[type="password"], .modal input[type="email"], .modal input[type="time"], .modal input[type="date"], .modal input[type="number"] {
+      width: 100%; padding: 0.5rem; border-radius: 5px; border: 1px solid #bbb; margin-bottom: 0.7rem;
+      font-size: 1rem;
+    }
+    .modal .close-btn {
+      position: absolute; top: 1rem; right: 1rem; background: none; color: #2b3a55;
+      border: none; font-size: 1.3rem; cursor: pointer; font-weight: bold;
+    }
+    .modal .error-msg { color: #d7263d; font-size: 0.98rem; margin-bottom: 0.5rem; }
+    .modal .area-list { margin: 0.5rem 0 1rem 0; }
+    .modal .area-item { margin-bottom: 0.3rem; }
+    .modal .time-row { display: flex; gap: 0.5rem; align-items: center;}
+    .repeat-row { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;}
+    .repeat-row label { margin-bottom: 0; }
+    .weekday-btn { background: #f2f4f8; color: #2b3a55; border: 1px solid #bbb; border-radius: 5px; padding: 0.2rem 0.7rem; font-size: 0.95rem; margin: 0.1rem;}
+    .weekday-btn.selected { background: #2b3a55; color: #fff; border-color: #2b3a55;}
+    .reserve-list-table { width: 100%; border-collapse: collapse; margin: 0.7rem 0;}
+    .reserve-list-table th, .reserve-list-table td { border-bottom: 1px solid #e0e0e0; padding: 0.4rem 0.2rem; text-align: center;}
+    .reserve-list-table th { background: #f2f4f8;}
+    .reserve-action-btn { background: #f2f4f8; color: #2b3a55; border: 1px solid #bbb; border-radius: 5px; padding: 0.2rem 0.7rem; font-size: 0.95rem;}
+    .reserve-action-btn:hover { background: #d7263d; color: #fff;}
+    .temp-modal-row { display: flex; align-items: center; justify-content: center; gap: 1rem;}
+    .temp-btn { font-size: 1.5rem; width: 2.2rem; height: 2.2rem; padding: 0; }
+    .gauge-label { font-size: 0.97rem; margin-bottom: 0.2rem; }
+    .timer { font-weight: bold; color: #2b3a55; }
+    .last-emptied { font-size:0.95rem; color:#888; margin-top:0.3rem;}
+    .area-list { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0; }
+    .area-item {
+      border: 1px solid #bbb; border-radius: 5px; padding: 0.3rem 0.7rem;
+      background: #f2f4f8; cursor: pointer; transition: background 0.2s;
+    }
+    .area-item.selected { background: #2b3a55; color: #fff; border-color: #2b3a55; }
+    .modal .repeat-row { margin-bottom: 0.7rem; }
+    .modal .reserve-list-table { margin-top: 0.7rem; }
+    .modal .edit-btn { margin-left: 0; margin-top: 0.5rem; }
+    .modal .modal-btns { display: flex; gap: 0.5rem; margin-top: 1rem; }
+    .modal .modal-btns button { flex: 1; }
+    .modal .modal-btns .edit-btn { flex: unset; }
+    .modal .modal-btns .close-btn { flex: unset; }
+    .modal .modal-btns .edit-btn, .modal .modal-btns .close-btn { margin-top: 0; }
+    .modal .modal-btns .edit-btn { margin-left: 0; }
+    .modal .modal-btns .close-btn { margin-left: 0; }
+    .modal .modal-btns .edit-btn, .modal .modal-btns .close-btn { margin-right: 0; }
+    .modal .modal-btns .edit-btn:last-child, .modal .modal-btns .close-btn:last-child { margin-right: 0; }
+    .card-image {
+      width: 90px; height: 90px; margin: 0.5rem auto 1rem auto; object-fit: contain; display: block; cursor: pointer;
+      border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); transition: box-shadow 0.2s;
+    }
+    .card-image:hover { box-shadow: 0 4px 20px #1bb76e44; }
+    .img-tooltip {
+      display: none; position: absolute; top: 10px; left: 100px; background: #fff; color: #2b3a55; border: 1px solid #bbb; border-radius: 7px; padding: 0.5rem 1rem; z-index: 10; font-size: 0.98rem; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+    .card:hover .img-tooltip { display: block; }
+    .card .img-tooltip { pointer-events: none; }
+    .cleaner-timer-big { font-size: 2rem; font-weight: bold; color: #2b3a55; }
+    .remain-seconds { font-size: 1.1rem; color: #2b3a55; text-align: center; margin-top: 0.2rem;}
+    @media (max-width: 900px) {
+      .dashboard { grid-template-columns: repeat(2, 1fr); }
+      .main-content { margin-left: 0; }
+      .side-menu { position: static; width: 100%; }
+    }
+    @media (max-width: 600px) {
+      .dashboard { grid-template-columns: 1fr; }
+      .main-content { margin-left: 0; }
+      .side-menu { position: static; width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 좌측 메뉴 -->
+  <div class="container">
+    <nav class="side-menu">
+      <h2>메뉴</h2>
+      <button onclick="openEmergencyModal()">긴급 신고</button>
+      <button onclick="openBoard()">입주민 게시판</button>
+      <button onclick="openNotice()">공지사항</button>
+      <button onclick="openCleanReserveModal()">청소 예약</button>
+      <button onclick="openAirReserveModal()">냉/난방 예약</button>
+      <button onclick="openUserEditModal()">회원정보 수정</button>
+    </nav>
+    <div class="main-content">
+      <header>
+        <h1>HouseKeeper</h1>
+        <div class="header-right" id="header-right">
+          <button onclick="openLoginModal()">로그인</button>
+          <button onclick="openSignupModal()">회원가입</button>
+        </div>
+      </header>
+      <div class="dashboard">
+        <!-- 1. 창문 제어 -->
+        <div class="card" tabindex="0">
+          <img src="window.png" class="card-image" id="window-img" alt="창문" title="창문 제어" onclick="openWindowDetailModal()">
+          <div class="img-tooltip">창문 이미지를 클릭해 제어 상세 보기!</div>
+          <h2>창문 제어</h2>
+          <div>
+            <ul>
+              <li>거실 
+                <select onchange="handleWindowChange('거실', this)">
+                  <option value="">선택</option>
+                  <option value="open">열기</option>
+                  <option value="close">닫기</option>
+                  <option value="vent">환기</option>
+                </select>
+                <span id="status-거실">(상태: 열기)</span>
+              </li>
+              <li>방1 
+                <select onchange="handleWindowChange('방1', this)">
+                  <option value="">선택</option>
+                  <option value="open">열기</option>
+                  <option value="close">닫기</option>
+                  <option value="vent">환기</option>
+                </select>
+                <span id="status-방1">(상태: 닫기)</span>
+              </li>
+              <li>방2 
+                <select onchange="handleWindowChange('방2', this)">
+                  <option value="">선택</option>
+                  <option value="open">열기</option>
+                  <option value="close">닫기</option>
+                  <option value="vent">환기</option>
+                </select>
+                <span id="status-방2">(상태: 닫기)</span>
+              </li>
+              <li>방3 
+                <select onchange="handleWindowChange('방3', this)">
+                  <option value="">선택</option>
+                  <option value="open">열기</option>
+                  <option value="close">닫기</option>
+                  <option value="vent">환기</option>
+                </select>
+                <span id="status-방3">(상태: 열기)</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+        <!-- 2. 쓰레기 제어 -->
+        <div class="card" tabindex="0">
+          <img src="trash.png" class="card-image" id="trash-img" alt="쓰레기통" title="쓰레기 제어" onclick="openTrashDetailModal()">
+          <div class="img-tooltip">쓰레기 이미지를 클릭해 상세 보기!</div>
+          <h2>쓰레기 제어</h2>
+          <ul>
+            <li>일반: <span id="trash-general-val">60%</span></li>
+            <li>재활용: <span id="trash-recycle-val">80%</span></li>
+            <li>음식물: <span id="trash-food-val">30%</span></li>
+          </ul>
+          <div class="last-emptied">마지막 비움: <span id="last-emptied">1일전</span></div>
+        </div>
+        <!-- 3. 청소기 제어 -->
+        <div class="card" tabindex="0">
+          <img src="cleaner.png" class="card-image" id="cleaner-img" alt="로봇청소기" title="청소기 제어" onclick="openCleanerDetailModal()">
+          <div class="img-tooltip">로봇청소기 이미지를 클릭해 상세 보기!</div>
+          <h2>청소기 제어</h2>
+          <div style="margin-top:0.7rem;">
+            <strong>잔여시간:</strong> <span id="cleaner-timer" class="cleaner-timer-big">00:00:00</span>
+          </div>
+          <button onclick="stopCleaningNow()">즉시 중단</button>
+        </div>
+        <!-- 4. 냉장고 재고/유통기한 -->
+        <div class="card" tabindex="0">
+          <img src="fridge.png" class="card-image" id="fridge-img" alt="냉장고" title="냉장고 재고/유통기한" onclick="openFridgeDetailModal()">
+          <div class="img-tooltip">냉장고 이미지를 클릭해 상세 보기!</div>
+          <h2>냉장고 재고/유통기한</h2>
+          <ul class="fridge-list" id="fridge-list"></ul>
+        </div>
+        <!-- 5. 냉방/난방 제어 -->
+        <div class="card" tabindex="0">
+          <img src="thermo.png" class="card-image" id="air-img" alt="온도계" title="냉방/난방 제어" onclick="openAirDetailModal()">
+          <div class="img-tooltip">온도계 이미지를 클릭해 상세 보기!</div>
+          <h2>냉방/난방 제어</h2>
+          <div>
+            <div>에어컨: <span id="ac-status">켜짐</span> / <span id="ac-temp">24</span>℃</div>
+            <div>난방: <span id="heater-status">꺼짐</span> / <span id="heater-temp">22</span>℃</div>
+            <div>집안 공기온도: <span id="air-temp">24.5</span>℃</div>
+            <div>집안 바닥온도: <span id="floor-temp">22.0</span>℃</div>
+          </div>
+        </div>
+        <!-- 6. 공동현관 출입문 -->
+        <div class="card" tabindex="0">
+          <img src="door.png" class="card-image" id="door-img" alt="공동현관문" title="공동현관 출입문" onclick="openDoorDetailModal()">
+          <div class="img-tooltip">문 이미지를 클릭해 상세 보기!</div>
+          <h2>공동현관 출입문</h2>
+          <div class="status" id="door-status">
+            <span id="door-lock-status">잠김</span>
+          </div>
+          <div class="gauge-label">열림 남은 시간</div>
+          <div class="gauge-bar"><div id="door-gauge" class="gauge-fill" style="width:0%"></div></div>
+          <div class="remain-seconds" id="door-remain-seconds"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+    // 구역 목록
+const windowAreas = ["거실", "방1", "방2", "방3"];
+const allAreas = ["거실", "화장실1", "화장실2", "방1", "방2", "방3", "주방", "드레스룸"];
+const weekdays = ["월", "화", "수", "목", "금", "토", "일"];
+
+// 창문 제어 (더미 데이터)
+let windowStates = {
+  "거실": "열기",
+  "방1": "닫기",
+  "방2": "닫기",
+  "방3": "열기"
+};
+function handleWindowChange(area, select) {
+  const state = select.value;
+  if (state) setWindowState(area, state);
+  updateWindowImage();
+}
+function setWindowState(area, state) {
+  windowStates[area] = state;
+  const statusEl = document.getElementById(`status-${area}`);
+  if (statusEl) statusEl.textContent = `(상태: ${state})`;
+  updateWindowImage();
+}
+function updateWindowImage() {
+  const img = document.getElementById('window-img');
+  let open = Object.values(windowStates).some(s => s === "열기" || s === "환기");
+  img.src = open ? "window.png" : "window.png"; // 열린/닫힌 이미지가 다르다면 파일명을 다르게!
+  img.alt = open ? "열린 창문" : "닫힌 창문";
+}
+
+// 쓰레기 제어 (더미 데이터)
+let trash = { general: 60, recycle: 80, food: 30 };
+let lastEmptied = "1일전";
+function updateTrash() {
+  document.getElementById('trash-general-val').textContent = trash.general + '%';
+  document.getElementById('trash-recycle-val').textContent = trash.recycle + '%';
+  document.getElementById('trash-food-val').textContent = trash.food + '%';
+  document.getElementById('last-emptied').textContent = lastEmptied;
+}
+
+// 청소기 제어 (타이머)
+let cleanerTimer = 0;
+let cleanerInterval = null;
+function startAllCleaning() {
+  cleanerTimer = allAreas.length * 10 * 60;
+  startCleanerTimer();
+}
+function startCleanerTimer() {
+  clearInterval(cleanerInterval);
+  updateCleanerTimer();
+  cleanerInterval = setInterval(() => {
+    if (cleanerTimer > 0) {
+      cleanerTimer--;
+      updateCleanerTimer();
+    }
+  }, 1000);
+}
+function updateCleanerTimer() {
+  let t = cleanerTimer;
+  const h = String(Math.floor(t/3600)).padStart(2,'0');
+  const m = String(Math.floor((t%3600)/60)).padStart(2,'0');
+  const s = String(t%60).padStart(2,'0');
+  document.getElementById('cleaner-timer').textContent = `${h}:${m}:${s}`;
+}
+function stopCleaningNow(){
+  cleanerTimer=0;
+  updateCleanerTimer();
+  clearInterval(cleanerInterval);
+}
+
+// 냉장고
+let fridge = [
+  {name:"달걀", qty:2, expiry:"2025-06-25"},
+  {name:"우유", qty:1, expiry:"2025-06-22"},
+  {name:"치즈", qty:1, expiry:"2025-06-23"},
+  {name:"양파", qty:5, expiry:"2025-07-10"},
+  {name:"당근", qty:3, expiry:"2025-07-01"},
+];
+let recentFridge = [
+  {name:"달걀", qty:2, expiry:"2025-06-25"},
+  {name:"우유", qty:1, expiry:"2025-06-22"},
+  {name:"치즈", qty:1, expiry:"2025-06-23"},
+  {name:"양파", qty:5, expiry:"2025-07-10"},
+  {name:"당근", qty:3, expiry:"2025-07-01"},
+];
+function renderFridgeList() {
+  const list = document.getElementById('fridge-list');
+  list.innerHTML = '';
+  fridge.forEach((item,i) => {
+    list.innerHTML += `<li>${item.name}${item.num?('('+item.num+')'):''} - ${item.qty}개 (유통기한:${item.expiry})</li>`;
+  });
+}
+
+// 냉방/난방 제어
+let acOn=true, heaterOn=false, acTemp=24, heaterTemp=22, airTemp=24.5, floorTemp=22;
+function updateAirCard(){
+  document.getElementById('ac-status').textContent = acOn?"켜짐":"꺼짐";
+  document.getElementById('ac-temp').textContent = acTemp;
+  document.getElementById('heater-status').textContent = heaterOn?"켜짐":"꺼짐";
+  document.getElementById('heater-temp').textContent = heaterTemp;
+  document.getElementById('air-temp').textContent = airTemp;
+  document.getElementById('floor-temp').textContent = floorTemp;
+}
+
+// 공동현관 출입문
+let doorOpen=false, doorTimer=0, doorInterval=null;
+function openDoor(){
+  if(doorOpen) return;
+  doorOpen=true; doorTimer=10;
+  document.getElementById('door-lock-status').textContent='열림';
+  updateDoorGauge();
+  doorInterval=setInterval(()=>{
+    doorTimer--;
+    updateDoorGauge();
+    if(doorTimer<=0){
+      clearInterval(doorInterval);
+      doorOpen=false;
+      document.getElementById('door-lock-status').textContent='잠김';
+      document.getElementById('door-gauge').style.width='0%';
+      document.getElementById('door-remain-seconds').textContent = '';
+    }
+  },1000);
+}
+function updateDoorGauge(){
+  document.getElementById('door-gauge').style.width=(doorTimer*10)+'%';
+  document.getElementById('door-remain-seconds').textContent = doorOpen && doorTimer>0 ? `남은 시간: ${doorTimer}초` : "";
+}
+
+// 예약 기능 (청소, 냉/난방) - 좌측 메뉴에서만 접근
+let cleanReserves = [
+  {areas: ["거실","방1"], date: "2025-06-22", repeat: "주간", option: "매주 월요일", weekdays:[1,3]},
+  {areas: ["방2"], date: "2025-06-21", repeat: "일간", option: "매일", weekdays:[]},
+];
+let airReserves = [
+  {type:"에어컨", date:"2025-06-23", temp:23, repeat:"일간", hours:3},
+  {type:"난방", date:"2025-06-25", temp:28, repeat:"주간", hours:2}
+];
+
+function openCleanReserveModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  let areaHtml = allAreas.map(area=>`<div class="area-item" onclick="this.classList.toggle('selected')">${area}</div>`).join('');
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>청소 예약</h3>
+      <div class="area-list">${areaHtml}</div>
+      <label>날짜</label>
+      <input type="date" id="reserve-date">
+      <div class="repeat-row">
+        <label>반복:</label>
+        <select id="reserve-repeat" onchange="toggleWeekdays(this)">
+          <option value="없음">없음</option>
+          <option value="일간">일간</option>
+          <option value="주간">주간</option>
+          <option value="월간">월간</option>
+          <option value="요일별">요일별</option>
+        </select>
+        <span id="weekday-btns" style="display:none;">
+          ${weekdays.map((w,i)=>`<button type="button" class="weekday-btn" data-idx="${i}" onclick="this.classList.toggle('selected')">${w}</button>`).join('')}
+        </span>
+      </div>
+      <button onclick="addCleanReserveModal(this)">예약 추가</button>
+      <h4>예약 목록</h4>
+      <ul id="modal-clean-reserve-list"></ul>
+    </div>`;
+  document.body.appendChild(modal);
+  renderCleanReserveList('modal-clean-reserve-list');
+  window.toggleWeekdays = function(sel){
+    document.getElementById('weekday-btns').style.display = sel.value==="요일별"?"inline-block":"none";
+  }
+}
+function addCleanReserveModal(btn){
+  let modal = btn.closest('.modal');
+  let areas = Array.from(modal.querySelectorAll('.area-item.selected')).map(e=>e.textContent);
+  let date = modal.querySelector('#reserve-date').value;
+  let repeat = modal.querySelector('#reserve-repeat').value;
+  let weekdaysSel = [];
+  if(repeat==="요일별"){
+    weekdaysSel = Array.from(modal.querySelectorAll('.weekday-btn.selected')).map(b=>parseInt(b.dataset.idx));
+    if(weekdaysSel.length===0){alert("요일을 선택하세요.");return;}
+  }
+  if(areas.length===0){alert("구역을 선택하세요.");return;}
+  if(!date){alert("날짜를 입력하세요.");return;}
+  cleanReserves.push({areas, date, repeat, option:repeat==="요일별"?weekdaysSel.map(i=>weekdays[i]).join(", "):repeat, weekdays:weekdaysSel});
+  renderCleanReserveList('modal-clean-reserve-list');
+}
+function renderCleanReserveList(ulId){
+  let ul = document.getElementById(ulId);
+  ul.innerHTML = '';
+  cleanReserves.forEach((r,i)=>{
+    ul.innerHTML += `<li>${r.areas.join(", ")} - ${r.date} (${r.repeat}${r.weekdays&&r.weekdays.length>0?": "+r.weekdays.map(i=>weekdays[i]).join(", "):""}) <button onclick="delCleanReserve(${i},'${ulId}')">삭제</button></li>`;
+  });
+}
+function delCleanReserve(idx,ulId){
+  cleanReserves.splice(idx,1);
+  renderCleanReserveList(ulId);
+}
+
+function openAirReserveModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>냉/난방 예약</h3>
+      <label>종류</label>
+      <select id="air-type">
+        <option value="에어컨">에어컨</option>
+        <option value="난방">난방</option>
+      </select>
+      <label>날짜</label>
+      <input id="air-date" type="date">
+      <label>희망 온도</label>
+      <input id="air-temp" type="number" value="24" min="17" max="42">
+      <label>동작 시간(1~6시간)</label>
+      <select id="air-hours">
+        <option value="1">1시간</option>
+        <option value="2">2시간</option>
+        <option value="3">3시간</option>
+        <option value="4">4시간</option>
+        <option value="5">5시간</option>
+        <option value="6">6시간</option>
+      </select>
+      <label>반복</label>
+      <select id="air-repeat">
+        <option value="없음">없음</option>
+        <option value="일간">일간</option>
+        <option value="주간">주간</option>
+        <option value="월간">월간</option>
+      </select>
+      <button onclick="addAirReserveModal(this)">예약 추가</button>
+      <h4>예약 목록</h4>
+      <ul id="modal-air-reserve-list"></ul>
+    </div>`;
+  document.body.appendChild(modal);
+  renderAirReserveList('modal-air-reserve-list');
+}
+function addAirReserveModal(btn){
+  let modal = btn.closest('.modal');
+  let type = modal.querySelector('#air-type').value;
+  let date = modal.querySelector('#air-date').value;
+  let temp = modal.querySelector('#air-temp').value;
+  let hours = modal.querySelector('#air-hours').value;
+  let repeat = modal.querySelector('#air-repeat').value;
+  if(!date){alert("날짜를 입력하세요.");return;}
+  airReserves.push({type,date,temp,repeat,hours});
+  renderAirReserveList('modal-air-reserve-list');
+}
+function renderAirReserveList(ulId){
+  let ul = document.getElementById(ulId);
+  ul.innerHTML = '';
+  airReserves.forEach((r,i)=>{
+    ul.innerHTML += `<li>${r.type} - ${r.date} (${r.temp}℃, ${r.hours}시간, ${r.repeat}) <button onclick="delAirReserve(${i},'${ulId}')">삭제</button></li>`;
+  });
+}
+function delAirReserve(idx,ulId){
+  airReserves.splice(idx,1);
+  renderAirReserveList(ulId);
+}
+
+// 냉장고 재고/유통기한 상세
+function openFridgeDetailModal() {
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  let recentHtml = recentFridge.slice(-5).reverse().map(item=>
+    `<option value="${item.name}">${item.name}</option>`).join('');
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>냉장고 재고/유통기한</h3>
+      <label>최근 추가 항목</label>
+      <select id="recent-fridge-select">
+        <option value="">선택</option>
+        ${recentHtml}
+      </select>
+      <label>수량</label>
+      <input id="recent-fridge-qty" type="number" min="1" value="1">
+      <label>유통기한</label>
+      <input id="recent-fridge-expiry" type="date">
+      <button onclick="addSelectedRecentFridgeModal(this)">추가</button>
+      <hr>
+      <label>새 품목 추가</label>
+      <input id="add-fridge-name" type="text" placeholder="품목명">
+      <input id="add-fridge-qty" type="number" min="1" value="1" placeholder="수량">
+      <input id="add-fridge-expiry" type="date">
+      <button onclick="addFridgeItemModal(this)">추가</button>
+      <h4>냉장고 목록</h4>
+      <ul id="modal-fridge-list"></ul>
+    </div>`;
+  document.body.appendChild(modal);
+  renderFridgeListModal('modal-fridge-list');
+}
+function addSelectedRecentFridgeModal(btn){
+  let modal = btn.closest('.modal');
+  let name = modal.querySelector('#recent-fridge-select').value;
+  let qty = parseInt(modal.querySelector('#recent-fridge-qty').value);
+  let expiry = modal.querySelector('#recent-fridge-expiry').value;
+  if(!name||!qty||!expiry){alert("모든 항목을 입력하세요.");return;}
+  fridge.push({name, qty, expiry});
+  recentFridge.push({name, qty, expiry});
+  renderFridgeListModal('modal-fridge-list');
+  renderFridgeList();
+}
+function addFridgeItemModal(btn){
+  let modal = btn.closest('.modal');
+  let name = modal.querySelector('#add-fridge-name').value;
+  let qty = parseInt(modal.querySelector('#add-fridge-qty').value);
+  let expiry = modal.querySelector('#add-fridge-expiry').value;
+  if(!name||!qty||!expiry){alert("모든 항목을 입력하세요.");return;}
+  fridge.push({name, qty, expiry});
+  recentFridge.push({name, qty, expiry});
+  renderFridgeListModal('modal-fridge-list');
+  renderFridgeList();
+}
+function renderFridgeListModal(ulId){
+  let ul = document.getElementById(ulId);
+  ul.innerHTML = '';
+  fridge.forEach((item,i) => {
+    ul.innerHTML += `<li>${item.name}${item.num?('('+item.num+')'):''} - ${item.qty}개 (유통기한:${item.expiry})</li>`;
+  });
+}
+
+// 카드별 상세 모달
+function openWindowDetailModal(){alert("창문 제어 상세 기능: 전체/구역별 제어, 상태 확인 등 (카드에서 직접 제어 가능)");}
+function openTrashDetailModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>쓰레기 제어</h3>
+      <ul>
+        <li>일반: <span id="modal-trash-general-val">${trash.general}%</span> <button onclick="emptyOneTrashModal('general')">비우기</button></li>
+        <li>재활용: <span id="modal-trash-recycle-val">${trash.recycle}%</span> <button onclick="emptyOneTrashModal('recycle')">비우기</button></li>
+        <li>음식물: <span id="modal-trash-food-val">${trash.food}%</span> <button onclick="emptyOneTrashModal('food')">비우기</button></li>
+      </ul>
+      <button onclick="emptyAllTrashModal()">전체 비우기</button>
+      <div class="last-emptied">마지막 비움: <span id="modal-last-emptied">${lastEmptied}</span></div>
+    </div>`;
+  document.body.appendChild(modal);
+  window.emptyOneTrashModal = function(type){
+    trash[type]=0;
+    lastEmptied = "0일전";
+    document.getElementById('modal-trash-general-val').textContent = trash.general + '%';
+    document.getElementById('modal-trash-recycle-val').textContent = trash.recycle + '%';
+    document.getElementById('modal-trash-food-val').textContent = trash.food + '%';
+    document.getElementById('modal-last-emptied').textContent = lastEmptied;
+    updateTrash();
+  };
+  window.emptyAllTrashModal = function(){
+    trash = { general: 0, recycle: 0, food: 0 };
+    lastEmptied = "0일전";
+    document.getElementById('modal-trash-general-val').textContent = trash.general + '%';
+    document.getElementById('modal-trash-recycle-val').textContent = trash.recycle + '%';
+    document.getElementById('modal-trash-food-val').textContent = trash.food + '%';
+    document.getElementById('modal-last-emptied').textContent = lastEmptied;
+    updateTrash();
+  };
+}
+function openCleanerDetailModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>청소기 제어</h3>
+      <button onclick="startAllCleaning()">전체 청소 시작</button>
+      <button onclick="stopCleaningNow()">즉시 중단</button>
+      <div style="margin-top:0.7rem;">
+        <strong>잔여시간:</strong> <span id="modal-cleaner-timer" class="cleaner-timer-big">${document.getElementById('cleaner-timer').textContent}</span>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function openAirDetailModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>냉방/난방 제어</h3>
+      <div>
+        <div>에어컨: <span id="modal-ac-status">${acOn?"켜짐":"꺼짐"}</span> / <span id="modal-ac-temp">${acTemp}</span>℃ 
+          <button onclick="openTempModal('ac')">온도 설정</button>
+        </div>
+        <div>난방: <span id="modal-heater-status">${heaterOn?"켜짐":"꺼짐"}</span> / <span id="modal-heater-temp">${heaterTemp}</span>℃ 
+          <button onclick="openTempModal('heater')">온도 설정</button>
+        </div>
+        <div>집안 공기온도: <span id="modal-air-temp">${airTemp}</span>℃</div>
+        <div>집안 바닥온도: <span id="modal-floor-temp">${floorTemp}</span>℃</div>
+        <button onclick="toggleAC()">에어컨 켜기/끄기</button>
+        <button onclick="toggleHeater()">난방 켜기/끄기</button>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function openDoorDetailModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>공동현관 출입문</h3>
+      <div class="status" id="modal-door-status">
+        <span id="modal-door-lock-status">${doorOpen?"열림":"잠김"}</span>
+      </div>
+      <div class="gauge-label">열림 남은 시간</div>
+      <div class="gauge-bar"><div id="modal-door-gauge" class="gauge-fill" style="width:${doorOpen?doorTimer*10:0}%"></div></div>
+      <div class="remain-seconds" id="modal-door-remain-seconds">${doorOpen&&doorTimer>0?`남은 시간: ${doorTimer}초`:""}</div>
+      <button onclick="openDoor()">문 열기</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+
+// 온도 설정
+function openTempModal(type){
+  let min=type==='ac'?17:20,max=type==='ac'?30:42,val=type==='ac'?acTemp:heaterTemp;
+  let tname=type==='ac'?'에어컨':'난방';
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>${tname} 희망 온도 설정</h3>
+      <div style="display:flex;align-items:center;justify-content:center;gap:1rem;">
+        <button onclick="changeTemp('${type}',-1,this)">-</button>
+        <span id="modal-temp-val" style="font-size:1.4rem;">${val}</span>℃
+        <button onclick="changeTemp('${type}',1,this)">+</button>
+      </div>
+      <button onclick="saveTemp('${type}',this)">저장</button>
+    </div>`;
+  document.body.appendChild(modal);
+  window.changeTemp = function(type,delta,btn){
+    let sp = btn.parentNode.querySelector('#modal-temp-val');
+    let v = parseInt(sp.textContent)+delta;
+    if(v>=min&&v<=max) sp.textContent=v;
+  };
+  window.saveTemp = function(type,btn){
+    let v = parseInt(btn.parentNode.querySelector('#modal-temp-val').textContent);
+    if(type==='ac') acTemp=v; else heaterTemp=v;
+    updateAirCard();
+    btn.closest('.modal-bg').remove();
+  };
+}
+function toggleAC(){acOn=!acOn;updateAirCard();}
+function toggleHeater(){heaterOn=!heaterOn;updateAirCard();}
+
+// 긴급신고
+function openEmergencyModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>긴급 신고</h3>
+      <button onclick="alert('경찰에 신고되었습니다!');this.closest('.modal-bg').remove()">경찰</button>
+      <button onclick="alert('소방에 신고되었습니다!');this.closest('.modal-bg').remove()">소방</button>
+      <button onclick="alert('응급에 신고되었습니다!');this.closest('.modal-bg').remove()">응급</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+// 게시판/공지사항(예시)
+function openBoard(){alert("입주민 게시판(더미)");}
+function openNotice(){alert("공지사항(더미)");}
+
+// 회원 기능
+let users = [
+  {id:"test1",pw:"Test!123",email:"test1@example.com"},
+  {id:"user2",pw:"Abc@456",email:"user2@domain.com"}
+];
+let loggedIn = null;
+function openLoginModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>로그인</h3>
+      <label>아이디(소문자+숫자)</label>
+      <input id="login-id" type="text" placeholder="아이디">
+      <label>비밀번호</label>
+      <input id="login-pw" type="password" placeholder="비밀번호">
+      <button onclick="doLogin(this)">로그인</button>
+      <button onclick="openFindIdModal();this.closest('.modal-bg').remove()">아이디 찾기</button>
+      <button onclick="openFindPwModal();this.closest('.modal-bg').remove()">비밀번호 찾기</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function doLogin(btn){
+  let id = btn.parentNode.querySelector('#login-id').value;
+  let pw = btn.parentNode.querySelector('#login-pw').value;
+  let user = users.find(u=>u.id===id && u.pw===pw);
+  if(user){
+    alert("로그인 성공!");
+    loggedIn = id;
+    btn.closest('.modal-bg').remove();
+  }else{
+    alert("아이디 또는 비밀번호가 틀렸습니다.");
+  }
+}
+function openSignupModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>회원가입</h3>
+      <label>아이디(소문자+숫자)</label>
+      <input id="signup-id" type="text" placeholder="아이디">
+      <label>비밀번호(대/소문자, 특수문자 가능)</label>
+      <input id="signup-pw" type="password" placeholder="비밀번호">
+      <label>이메일</label>
+      <input id="signup-email" type="email" placeholder="이메일">
+      <button onclick="doSignup(this)">회원가입</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function doSignup(btn){
+  let id = btn.parentNode.querySelector('#signup-id').value;
+  let pw = btn.parentNode.querySelector('#signup-pw').value;
+  let email = btn.parentNode.querySelector('#signup-email').value;
+  if(!/^[a-z0-9]+$/.test(id)){alert("아이디는 소문자+숫자만 가능합니다.");return;}
+  if(users.find(u=>u.id===id)){alert("이미 존재하는 아이디입니다.");return;}
+  if(!pw){alert("비밀번호를 입력하세요.");return;}
+  if(!email){alert("이메일을 입력하세요.");return;}
+  users.push({id,pw,email});
+  alert("회원가입 완료!");
+  btn.closest('.modal-bg').remove();
+}
+function openFindIdModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>아이디 찾기</h3>
+      <label>이메일</label>
+      <input id="findid-email" type="email" placeholder="이메일">
+      <button onclick="doFindId(this)">아이디 찾기</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function doFindId(btn){
+  let email = btn.parentNode.querySelector('#findid-email').value;
+  let user = users.find(u=>u.email===email);
+  if(user){alert("아이디: "+user.id);}
+  else{alert("해당 이메일로 가입된 아이디가 없습니다.");}
+}
+function openFindPwModal(){
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>비밀번호 찾기</h3>
+      <label>아이디</label>
+      <input id="findpw-id" type="text" placeholder="아이디">
+      <label>이메일</label>
+      <input id="findpw-email" type="email" placeholder="이메일">
+      <button onclick="doFindPw(this)">비밀번호 찾기</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function doFindPw(btn){
+  let id = btn.parentNode.querySelector('#findpw-id').value;
+  let email = btn.parentNode.querySelector('#findpw-email').value;
+  let user = users.find(u=>u.id===id&&u.email===email);
+  if(user){alert("비밀번호: "+user.pw);}
+  else{alert("일치하는 정보가 없습니다.");}
+}
+function openUserEditModal(){
+  if(!loggedIn){alert("로그인 후 이용하세요.");return;}
+  let user = users.find(u=>u.id===loggedIn);
+  let modal = document.createElement('div');
+  modal.className='modal-bg active';
+  modal.innerHTML = `
+    <div class="modal">
+      <button class="close-btn" onclick="this.closest('.modal-bg').remove()">×</button>
+      <h3>회원정보 수정</h3>
+      <label>아이디(수정불가)</label>
+      <input type="text" value="${user.id}" disabled>
+      <label>비밀번호(변경시 입력)</label>
+      <input id="edit-pw" type="password" placeholder="새 비밀번호">
+      <label>이메일</label>
+      <input id="edit-email" type="email" value="${user.email}">
+      <button onclick="doUserEdit(this)">수정</button>
+    </div>`;
+  document.body.appendChild(modal);
+}
+function doUserEdit(btn){
+  let modal = btn.closest('.modal');
+  let pw = modal.querySelector('#edit-pw').value;
+  let email = modal.querySelector('#edit-email').value;
+  let user = users.find(u=>u.id===loggedIn);
+  if(!email){alert("이메일을 입력하세요.");return;}
+  user.email = email;
+  if(pw) user.pw = pw;
+  alert("회원정보가 수정되었습니다.");
+  btn.closest('.modal-bg').remove();
+}
+
+// 초기 렌더링
+updateTrash();
+renderFridgeList();
+updateAirCard();
+updateCleanerTimer();
+  </script>
+</body>
+</html>
